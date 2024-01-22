@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-def load_train_test(lookback_period=10, rebalance_period=5, split=0.8):
+def load_train_test(lookback_period=10, rebalance_period=5):
     tickers = ['AAPL', 'MSFT', 'GOOG', 'META', 'TSLA', 'SPY']
     dataset = Dataset(tickers, '2010-01-01', '2023-12-31')
     features = dataset.features()
