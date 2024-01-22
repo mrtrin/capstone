@@ -26,6 +26,8 @@ class Dataset:
         return df.fillna(method='ffill')
 
     def features(self):
+        # TODO: Add Features based on technical signals
+        
         close = self.data['Adj Close']
         close.columns = [f'{col}_close' for col in close.columns]
         volume = self.data['Volume']
