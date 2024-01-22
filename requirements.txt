@@ -1,4 +1,5 @@
-scikit-learn
 pandas
+pandas-ta
+scikit-learn
 torch
 yfinance

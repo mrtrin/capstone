@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import yfinance as yf
 
 def load_train_test(lookback_period=10, rebalance_period=5, split=0.8):
@@ -6,15 +7,10 @@ def load_train_test(lookback_period=10, rebalance_period=5, split=0.8):
     dataset = Dataset(tickers, '2010-01-01', '2023-12-31')
     features = dataset.features()
     targets = dataset.targets(rebalance_period)
-    X, y = [], []
-    for i in range(len(features)-lookback_period):
-        if features.index[i].dayofweek == 4: # Friday
-            X.append(features[i:i+lookback_period])
-            y.append(targets[i+lookback_period:i+lookback_period+1])
-    return np.array(X), np.array(y).reshape(len(y), targets.shape[1])
+    X, y = dataset.create_training_set(features, targets, lookback_period)
+    return X, y
 
 class Dataset:
-
     def __init__(self, tickers, start_date, end_date):
         self.tickers = tickers
         self.start_date = start_date
@@ -25,7 +21,7 @@ class Dataset:
     def _clean(self, df):
         return df.fillna(method='ffill')
 
-    def features(self):
+    def features(self, stoch_lookback=15):
         # TODO: Add Features based on technical signals
         
         close = self.data['Adj Close']
@@ -33,11 +29,40 @@ class Dataset:
         volume = self.data['Volume']
         volume.columns = [f'{col}_volume' for col in volume.columns]
 
-        return close.join(volume)
+        features = []
+        for ticker in close.columns:
+            df = pd.DataFrame(close[ticker])
+            df.columns = ['close']
+            rsi = df.ta.rsi()
+            macd = df.ta.macd()
+            bbands = df.ta.bbands()
+
+            stoch = df.copy()
+            stoch['high'] = stoch['close'].rolling(stoch_lookback).max()
+            stoch['low'] = stoch['close'].rolling(stoch_lookback).min()
+            stoch.ta.stoch(append=True)
+            del stoch['close']
+            del stoch['high']
+            del stoch['low']
+
+            df = pd.concat([rsi, macd, bbands, stoch], axis=1)
+            df.columns = [f'{ticker}_{col}' for col in df.columns]
+            features.append(df)
+
+        return pd.concat(features, axis=1)
     
-    def targets(self, period):
-        period_returns = (self.data['Adj Close'] / self.data['Adj Close'].shift(period)) - 1
+    def targets(self, prediction_period):
+        period_returns = (self.data['Adj Close'] / self.data['Adj Close'].shift(prediction_period)) - 1
         period_returns[period_returns < 0] = 0
         weights = period_returns.div(period_returns.sum(axis=1), axis=0)
-        weights = weights.shift(-1*period)
+        weights = weights.shift(-1*prediction_period)
         return weights
+
+    def create_training_set(self, features, targets, lookback, dayofweek=4):
+        # This is coded to create weekly rebalance on Friday
+        X, y = [], []
+        for i in range(len(features)-lookback):
+            if features.index[i].dayofweek == dayofweek: # Friday
+                X.append(features[i:i+lookback])
+                y.append(targets[i+lookback:i+lookback+1])
+        return np.array(X), np.array(y).reshape(len(y), targets.shape[1])
