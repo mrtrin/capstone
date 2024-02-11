@@ -49,7 +49,6 @@ def train(X_train, y_train, num_epochs, batch_size, learning_rate, shuffle):
     for epoch in range(num_epochs):
         for x, y in train_loader:
             optimizer.zero_grad()
-            print(x.shape)
             y_pred = model(x)
             loss = loss_fn(y_pred, y)
             loss.backward()
