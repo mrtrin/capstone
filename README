@@ -1,0 +1,11 @@
+## Welcome to Captone Project
+
+This project aims to utilize Machine Learing for portfolio allocation.
+
+### Setup Instruction
+
+1. Install Python 3.11
+2. Create virtual environment: python3 -m venv env
+3. Activate virtual environment: env\bin\activate (Linux/Mac) or env\Scripts\activate
+4. Install python dependencies: pip install -r requirements.txt
+5. Install project: pip install -e .

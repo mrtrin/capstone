@@ -1,6 +1,9 @@
+from pandas_ta import Imports
+
 import numpy as np
 import pandas as pd
 import yfinance as yf
+
 
 def load_train_test(lookback_period=10, rebalance_period=5):
     tickers = ['AAPL', 'MSFT', 'GOOG', 'META', 'TSLA', 'SPY']
@@ -8,7 +11,7 @@ def load_train_test(lookback_period=10, rebalance_period=5):
     features = dataset.features()
     targets = dataset.targets(rebalance_period)
     X, y = dataset.create_training_set(features, targets, lookback_period)
-    return X, y
+    return dataset.data, features, targets, X.astype(np.float32), y.astype(np.float32)
 
 class Dataset:
     def __init__(self, tickers, start_date, end_date):
@@ -24,20 +27,18 @@ class Dataset:
     def features(self, stoch_lookback=15):
         # TODO: Add Features based on technical signals
         
-        close = self.data['Adj Close']
-        close.columns = [f'{col}_close' for col in close.columns]
-        volume = self.data['Volume']
-        volume.columns = [f'{col}_volume' for col in volume.columns]
+        closes = self.data['Adj Close']
+        volumes = self.data['Volume']
 
         features = []
-        for ticker in close.columns:
-            df = pd.DataFrame(close[ticker])
-            df.columns = ['close']
-            rsi = df.ta.rsi()
-            macd = df.ta.macd()
-            bbands = df.ta.bbands()
+        for ticker in closes.columns:
+            close = pd.DataFrame(closes[ticker])
+            close.columns = ['close']
+            rsi = close.ta.rsi()
+            macd = close.ta.macd()
+            bbands = close.ta.bbands()
 
-            stoch = df.copy()
+            stoch = close.copy()
             stoch['high'] = stoch['close'].rolling(stoch_lookback).max()
             stoch['low'] = stoch['close'].rolling(stoch_lookback).min()
             stoch.ta.stoch(append=True)
@@ -45,7 +46,10 @@ class Dataset:
             del stoch['high']
             del stoch['low']
 
-            df = pd.concat([rsi, macd, bbands, stoch], axis=1)
+            vol = pd.DataFrame(volumes[ticker], columns=['volume'])
+            print('111', vol.columns)
+
+            df = pd.concat([close, vol, rsi, macd, bbands, stoch], axis=1)
             df.columns = [f'{ticker}_{col}' for col in df.columns]
             features.append(df)
 

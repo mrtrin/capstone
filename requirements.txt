@@ -2,5 +2,6 @@ matplotlib
 pandas
 pandas-ta
 scikit-learn
+statsmodels
 torch
 yfinance
