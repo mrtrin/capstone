@@ -7,7 +7,7 @@ from src.portfolio import Portfolio
 
 import pandas as pd
 
-def main(num_epochs=10, batch_size=32, learning_rate=0.001, shuffle=False):
+def main(num_epochs=1, batch_size=32, learning_rate=0.001, shuffle=False):
     yfdata, features, targets, X, y = load_train_test()
     print(len(X))
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
