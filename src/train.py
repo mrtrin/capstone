@@ -23,10 +23,8 @@ def main(num_epochs=1, batch_size=32, learning_rate=0.001, shuffle=False):
     # TODO: fix model so loss are reduced
     model = train(X_train, y_train, num_epochs, batch_size, learning_rate, shuffle)
 
-    # TODO: show Portfolio value from train dataset
-    prices = pd.DataFrame(X_test, columns=features.columns)
-    prices = prices[[c for c in prices.columns if '_close' in c]]
-    optimal_test_portfolio = Portfolio.compute_portfolio(y_test, prices)
+    # # TODO: show Portfolio value from train dataset
+    # optimal_test_portfolio = Portfolio.compute_portfolio(y, yfdata['Adj Close'])
     # predicted_test_portfolio = Portfolio.compute_portfolio(model.predict(X_test), )
 
     # TODO: show Portfolio value from test dataset
