@@ -1,3 +1,7 @@
+from keras.models import Sequential
+from keras.layers import LSTM, Dense
+from keras.optimizers import Adam
+
 import torch.nn as nn
 
 

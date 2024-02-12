@@ -1,24 +1,15 @@
+from keras.models import Sequential
+from keras.layers import LSTM, Dense
+from keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from src.datasets import load_train_test
-from src.models import airmodel
+from src.portfolio import Portfolio
 
-from statsmodels.graphics.gofplots import qqplot
+import pandas as pd
 
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.utils.data as data
-from torch.autograd import Variable
-
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
-
-from scipy.optimize import minimize
-
-
-def main(num_epochs=1000, batch_size=128, learning_rate=0.001, shuffle=False):
-    # TODO: More Feature Engineering, Normalization
+def main(num_epochs=10, batch_size=32, learning_rate=0.001, shuffle=False):
     yfdata, features, targets, X, y = load_train_test()
+    print(len(X))
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     
     print('========= Train / Test Dataset =========')
@@ -26,38 +17,29 @@ def main(num_epochs=1000, batch_size=128, learning_rate=0.001, shuffle=False):
     print('X_test', X_test.shape)
     print('y_train', y_train.shape)
     print('y_test', y_test.shape)
+    print('X columns', features.columns)
+    print('Y columns', targets.columns)
 
     # TODO: fix model so loss are reduced
-    model = train(X_train, y_train, 1000, batch_size, learning_rate, shuffle)
+    model = train(X_train, y_train, num_epochs, batch_size, learning_rate, shuffle)
 
     # TODO: show Portfolio value from train dataset
+    prices = pd.DataFrame(X_test, columns=features.columns)
+    prices = prices[[c for c in prices.columns if '_close' in c]]
+    optimal_test_portfolio = Portfolio.compute_portfolio(y_test, prices)
+    # predicted_test_portfolio = Portfolio.compute_portfolio(model.predict(X_test), )
 
     # TODO: show Portfolio value from test dataset
 
 
 def train(X_train, y_train, num_epochs, batch_size, learning_rate, shuffle):
-    
-    # Setup Model and Optimizer
-    model = airmodel.AirModel(X_train.shape[2], y_train.shape[1])
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    loss_fn = nn.MSELoss()
-    
-    train_loader = data.DataLoader(data.TensorDataset(torch.tensor(X_train), torch.tensor(y_train)), batch_size=batch_size, shuffle=shuffle)
+    model = Sequential()
+    model.add(LSTM(units=X_train.shape[2]*4, input_shape=(X_train.shape[1], X_train.shape[2])))
+    model.add(Dense(units=y_train.shape[1]))  # output for optimal weights for next week.
 
-    model.train()
-
-    for epoch in range(num_epochs):
-        for x, y in train_loader:
-            optimizer.zero_grad()
-            y_pred = model(x)
-            loss = loss_fn(y_pred, y)
-            loss.backward()
-            optimizer.step()
-        model.eval()
-        print(f'epoch {epoch}/{num_epochs}, loss: {loss.item():.4f}')
-    
+    model.compile(optimizer=Adam(), loss='binary_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, epochs=num_epochs, batch_size=batch_size, validation_split=0.2, verbose=1)
     return model
-    
 
 if __name__ == '__main__':
     main()

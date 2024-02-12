@@ -1,5 +1,7 @@
 from pandas_ta import Imports
 
+from sklearn.preprocessing import MinMaxScaler
+
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -8,9 +10,10 @@ import yfinance as yf
 def load_train_test(lookback_period=10, rebalance_period=5):
     tickers = ['AAPL', 'MSFT', 'GOOG', 'META', 'TSLA', 'SPY']
     dataset = Dataset(tickers, '2010-01-01', '2023-12-31')
-    features = dataset.features()
+    features = dataset.features(scale=True)
     targets = dataset.targets(rebalance_period)
     X, y = dataset.create_training_set(features, targets, lookback_period)
+    
     return dataset.data, features, targets, X.astype(np.float32), y.astype(np.float32)
 
 class Dataset:
@@ -19,12 +22,14 @@ class Dataset:
         self.start_date = start_date
         self.end_date = end_date
         self.data = yf.download(tickers, start=start_date, end=end_date)
+        print('Downloaded Data Size', self.data.shape)
         self.data = self._clean(self.data)
+        print('Cleaned Data Size', self.data.shape)
 
     def _clean(self, df):
-        return df.fillna(method='ffill')
+        return df.fillna(method='ffill').dropna()
 
-    def features(self, stoch_lookback=15):
+    def features(self, scale=True, stoch_lookback=15):
         # TODO: Add Features based on technical signals
         
         closes = self.data['Adj Close']
@@ -49,11 +54,14 @@ class Dataset:
             vol = pd.DataFrame(volumes[ticker], columns=['volume'])
             print('111', vol.columns)
 
-            df = pd.concat([close, vol, rsi, macd, bbands, stoch], axis=1)
+            df = pd.concat([close, vol, rsi], axis=1)
             df.columns = [f'{ticker}_{col}' for col in df.columns]
             features.append(df)
 
-        return pd.concat(features, axis=1)
+        df = pd.concat(features, axis=1)
+        non_price_volumes = [c for c in df.columns if not ('_close' in c or '_vol' in c)]
+        df[non_price_volumes] = MinMaxScaler(feature_range=(0, 1)).fit_transform(df[non_price_volumes])
+        return df.fillna(method='ffill')
     
     def targets(self, prediction_period):
         period_returns = (self.data['Adj Close'] / self.data['Adj Close'].shift(prediction_period)) - 1

@@ -9,3 +9,7 @@ This project aims to utilize Machine Learing for portfolio allocation.
 3. Activate virtual environment: env\bin\activate (Linux/Mac) or env\Scripts\activate
 4. Install python dependencies: pip install -r requirements.txt
 5. Install project: pip install -e .
+
+### To Run Training
+
+python src/train.py

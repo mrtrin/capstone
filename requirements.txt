@@ -1,7 +1,10 @@
+keras
 matplotlib
 pandas
 pandas-ta
+PyPortfolioOpt
 scikit-learn
 statsmodels
+tensorflow
 torch
 yfinance
