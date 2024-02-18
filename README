@@ -10,6 +10,6 @@ This project aims to utilize Machine Learing for portfolio allocation.
 4. Install python dependencies: pip install -r requirements.txt
 5. Install project: pip install -e .
 
-### To Run Training
+### To Run Expertiment
 
-python src/train.py
+Run research.ipynb in Jupyter mode on VS Code
