@@ -10,9 +10,9 @@ import yfinance as yf
 def load_train_test(lookback_period=10, rebalance_period=5):
     tickers = ['AAPL', 'MSFT', 'GOOG', 'META', 'TSLA', 'SPY']
     dataset = Dataset(tickers, '2010-01-01', '2023-12-31')
-    features, closes = dataset.features(scale=True)
+    features = dataset.features(scale=True)
     targets = dataset.targets(rebalance_period)
-    X, y, y_price = dataset.create_training_set(features, targets, closes, lookback_period)
+    X, y, y_price = dataset.create_training_set(features, targets, lookback_period)
     
     return dataset.data, features, targets, X.astype(np.float32), y.astype(np.float32), y_price.astype(np.float32)
 
@@ -21,61 +21,72 @@ class Dataset:
         self.tickers = tickers
         self.start_date = start_date
         self.end_date = end_date
-        self.data = yf.download(tickers, start=start_date, end=end_date)
-        print('Downloaded Data Size', self.data.shape)
+        self.data = self._download(tickers, start_date, end_date)
         self.data = self._clean(self.data)
-        print('Cleaned Data Size', self.data.shape)
+        self.data = self._add_cash(self.data)
+    
+    def _download(self, tickers, start_date, end_date):
+        return yf.download(tickers, start=start_date, end=end_date)
 
     def _clean(self, df):
         return df.fillna(method='ffill').dropna()
+    
+    def _add_cash(self, df, daily_rates=.01/365):
+        cash = (pd.Series(1, index=df.index) * (1+daily_rates)).cumprod()
+        columns = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+        df_cash = pd.DataFrame({(c,'CASH'): cash for c in columns})
+        df_cash.columns = pd.MultiIndex.from_tuples(df_cash.columns)
+        return pd.concat([df, df_cash], axis=1)
 
-    def features(self, scale=True, stoch_lookback=15):
-        # TODO: Add Features based on technical signals
-        
-        closes = self.data['Adj Close']
-        volumes = self.data['Volume']
+    def features(self, stoch_lookback=15, scale=True):
+        df = self.data.swaplevel(0, 1, 1)
 
-        features = []
-        for ticker in closes.columns:
-            close = pd.DataFrame(closes[ticker])
-            close.columns = ['close']
-            rsi = close.ta.rsi()
-            macd = close.ta.macd()
-            bbands = close.ta.bbands()
+        scale_min = 0.01
+        scale_max = 1.00
 
-            stoch = close.copy()
-            stoch['high'] = stoch['close'].rolling(stoch_lookback).max()
-            stoch['low'] = stoch['close'].rolling(stoch_lookback).min()
-            stoch.ta.stoch(append=True)
-            del stoch['close']
-            del stoch['high']
-            del stoch['low']
+        for ticker in df.columns.levels[0]:
+            rsi = df[ticker].ta.rsi()
+            rsi = pd.DataFrame(rsi.values, index=rsi.index, columns=['RSI'])
+            rsi = pd.DataFrame(MinMaxScaler((scale_min, scale_max)).fit_transform(rsi), index=rsi.index, columns=rsi.columns)
+            df[(ticker,'RSI')] = rsi
 
-            vol = pd.DataFrame(volumes[ticker], columns=['volume'])
-            print('111', vol.columns)
+            macd = df[ticker].ta.macd()
+            macd = pd.DataFrame(MinMaxScaler((scale_min, scale_max)).fit_transform(macd), index=macd.index, columns=macd.columns)
+            for c in macd.columns:
+                df[(ticker, c)] = macd[c]
 
-            df = pd.concat([close, vol, rsi], axis=1)
-            df.columns = [f'{ticker}_{col}' for col in df.columns]
-            features.append(df)
+            bbands = df[ticker].ta.bbands()
+            bbands = pd.DataFrame(MinMaxScaler((scale_min, scale_max)).fit_transform(bbands), index=bbands.index, columns=bbands.columns)
+            for c in bbands.columns:
+                df[(ticker, c)] = bbands[c]
 
-        df = pd.concat(features, axis=1)
-        non_price_volumes = [c for c in df.columns if not ('_close' in c or '_vol' in c)]
-        df[non_price_volumes] = MinMaxScaler(feature_range=(0, 1)).fit_transform(df[non_price_volumes])
-        return df.fillna(method='ffill'), closes
+            stoch = df[ticker].ta.stoch(append=True)
+            stoch = pd.DataFrame(MinMaxScaler((scale_min, scale_max)).fit_transform(stoch), index=stoch.index, columns=stoch.columns)
+            for c in stoch.columns:
+                df[(ticker, c)] = stoch[c]
+
+            obv = df[ticker].ta.obv()
+            obv = pd.DataFrame(obv.values, index=obv.index, columns=['OBV'])
+            obv = pd.DataFrame(MinMaxScaler((scale_min, scale_max)).fit_transform(obv), index=obv.index, columns=obv.columns)
+            df[(ticker,'OBV')] = obv
+        return df.ffill()
     
     def targets(self, prediction_period):
         period_returns = (self.data['Adj Close'] / self.data['Adj Close'].shift(prediction_period)) - 1
         period_returns[period_returns < 0] = 0
         weights = period_returns.div(period_returns.sum(axis=1), axis=0)
+        weights = weights.fillna(0)
         weights = weights.shift(-1*prediction_period)
-        return weights
+        return weights.ffill()
 
-    def create_training_set(self, features, targets, closes, lookback, dayofweek=4):
+    def create_training_set(self, features, targets, lookback, dayofweek=4):
         # This is coded to create weekly rebalance on Friday
-        print('0000000000000')
+        closes = features.swaplevel(0, 1, 1)['Adj Close']
+        print('---- Creating Training Set')
         print(features.shape)
         print(targets.shape)
         print(closes.shape)
+        
         X, y, y_price = [], [], []
         for i in range(len(features)-lookback):
             if features.index[i].dayofweek == dayofweek: # Friday

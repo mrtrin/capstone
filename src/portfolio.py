@@ -21,7 +21,8 @@ class Portfolio:
             share_alloc = value_alloc / prices[i,:]
             allocations[i] = share_alloc
             print('CURRENT', current_value)
-            print( ' current_value', (allocations[i-1,:] * prices[i,:]))
+            print('  weight', weights[i,:])
+            print('  current_value', (allocations[i-1,:] * prices[i,:]))
             print('  value_alloc', value_alloc)
             print('  portfolio', allocations[i])
             print('  price', prices[i])

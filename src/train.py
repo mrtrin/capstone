@@ -9,6 +9,16 @@ import pandas as pd
 
 def main(num_epochs=1, batch_size=32, learning_rate=0.001, shuffle=False):
     yfdata, features, targets, X, y, y_price = load_train_test()
+    
+    print('========= Original Dataset =========')
+    print('features', features.shape, 'columns', features.columns, features.index[0], features.index[-1])
+    print('targets', targets.shape, 'columns', targets.columns, targets.index[0], targets.index[-1])
+    print('X', X.shape)
+    print('y', y.shape)
+    print('y_price', y_price.shape)
+
+    print(y)
+    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     
     print('========= Train / Test Dataset =========')
@@ -17,8 +27,6 @@ def main(num_epochs=1, batch_size=32, learning_rate=0.001, shuffle=False):
     print('y_train', y_train.shape)
     print('y_test', y_test.shape)
     print('y_price', y_price.shape)
-    print('X columns', features.columns)
-    print('Y columns', targets.columns)
 
     # TODO: fix model so loss are reduced
     # model = train(X_train, y_train, num_epochs, batch_size, learning_rate, shuffle)
