@@ -7,8 +7,15 @@ from src.portfolio import Portfolio
 
 import pandas as pd
 
-def main(num_epochs=1, batch_size=32, learning_rate=0.001, shuffle=False):
-    yfdata, features, targets, X, y, y_price = load_train_test()
+import warnings
+pd.options.mode.chained_assignment = None
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+def main(num_epochs=128, batch_size=32, learning_rate=0.001):
+    tickers = ['AAPL', 'MSFT', 'GOOG', 'META', 'TSLA', 'SPY']
+    start = '2010-01-01'
+    end = '2024-01-01'
+    yfdata, features, targets, X, y, y_price = load_train_test(tickers, start, end)
     
     print('========= Original Dataset =========')
     print('features', features.shape, 'columns', features.index[0], features.index[-1])
@@ -26,23 +33,17 @@ def main(num_epochs=1, batch_size=32, learning_rate=0.001, shuffle=False):
     print('y_test', y_test.shape)
     print('y_price', y_price.shape)
 
-    # TODO: fix model so loss are reduced
-    model = train(X_train, y_train, num_epochs, batch_size, learning_rate, shuffle)
+    model = train(X_train, y_train, num_epochs, batch_size, learning_rate)
 
-    # # TODO: show Portfolio value from train dataset
-    optimal_test_portfolio = Portfolio.portfolio_returns(y, y_price)
-    print(optimal_test_portfolio)
-    print((optimal_test_portfolio+1).cumprod())
-    predicted_test_portfolio = Portfolio.portfolio_returns(model.predict(X_test), y_price)
+    optimal_test_portfolio = Portfolio.portfolio_returns('optimal', y, y_price)
+    predicted_test_portfolio = Portfolio.portfolio_returns('predicted', model.predict(X_test), y_price)
 
-    print('----------- predicted -----------')
-    print(predicted_test_portfolio)
-    print((predicted_test_portfolio+1).cumprod())
+    overall = optimal_test_portfolio.join(predicted_test_portfolio)
 
-    # TODO: show Portfolio value from test dataset
+    print(overall)
 
 
-def train(X_train, y_train, num_epochs, batch_size, learning_rate, shuffle):
+def train(X_train, y_train, num_epochs, batch_size, learning_rate):
 
     model = Sequential()
     model.add(LSTM(units=X_train.shape[2]*4, input_shape=(X_train.shape[1], X_train.shape[2])))

@@ -23,7 +23,7 @@ class TestDatasets(unittest.TestCase):
         mock_data.columns=pd.MultiIndex.from_tuples(mock_data.columns)
 
         ds = MockDatasets(['AAPL', 'TSLA'], '2022-01-01', '2022-01-03', mock_data)
-        targets = ds.targets(1)
+        targets = ds.targets(ds.data, 1)
         expected = pd.DataFrame([
             [0, 1, 0],
             [1, 0, 0],

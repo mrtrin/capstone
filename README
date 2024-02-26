@@ -13,3 +13,15 @@ This project aims to utilize Machine Learing for portfolio allocation.
 ### To Run Expertiment
 
 Run research.ipynb in Jupyter mode on VS Code
+
+Note that research.ipynb relies on code in src/ folder that needs to be installed in step 5 in Setup Instruction above
+
+Alternatively, you can run as command line "python src/research.py" which should generate similar results as the research.ipynb
+
+
+### Unittest
+
+Unittest is added to ensure the generation of optimal allocation as Y for training target, and the calculation of Portfolio Value are accurate
+
+test/test_datasets.py
+test/test_portfolio.py

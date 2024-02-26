@@ -7,11 +7,10 @@ import pandas as pd
 import yfinance as yf
 
 
-def load_train_test(lookback_period=10, rebalance_period=5):
-    tickers = ['AAPL', 'MSFT', 'GOOG', 'META', 'TSLA', 'SPY']
-    dataset = Dataset(tickers, '2010-01-01', '2023-12-31')
+def load_train_test(tickers, start, end, lookback_period=10, rebalance_period=5):
+    dataset = Dataset(tickers, start, end)
     features = dataset.features(scale=True)
-    targets = dataset.targets(rebalance_period)
+    targets = dataset.targets(features, rebalance_period)
     X, y, y_price = dataset.create_training_set(features, targets, lookback_period)
     
     return dataset.data, features, targets, X.astype(np.float32), y.astype(np.float32), y_price.astype(np.float32)
@@ -69,19 +68,19 @@ class Dataset:
             obv = pd.DataFrame(obv.values, index=obv.index, columns=['OBV'])
             obv = pd.DataFrame(MinMaxScaler((scale_min, scale_max)).fit_transform(obv), index=obv.index, columns=obv.columns)
             df[(ticker,'OBV')] = obv
-        return df.ffill()
+        return df.ffill().dropna(axis=0).swaplevel(0, 1, 1)
     
-    def targets(self, prediction_period):
-        period_returns = (self.data['Adj Close'] / self.data['Adj Close'].shift(prediction_period)) - 1
+    def targets(self, df, prediction_period):
+        period_returns = (df['Adj Close'] / df['Adj Close'].shift(prediction_period)) - 1
         period_returns[period_returns < 0] = 0
         weights = period_returns.div(period_returns.sum(axis=1), axis=0)
         weights = weights.fillna(0)
         weights = weights.shift(-1*prediction_period)
-        return weights.ffill()
+        return weights.ffill().round(5)
 
     def create_training_set(self, features, targets, lookback, dayofweek=4):
         # This is coded to create weekly rebalance on Friday
-        closes = features.swaplevel(0, 1, 1)['Adj Close']
+        closes = features['Adj Close']
         print('---- Creating Training Set')
         print(features.shape)
         print(targets.shape)

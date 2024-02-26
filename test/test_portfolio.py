@@ -32,10 +32,13 @@ class TestPortfolio(unittest.TestCase):
             [0, 0, 1]
         ], columns=['AAPL','TSLA', 'CASH'], dtype=float)
 
-        print(weights)
-        print(ds.data['Adj Close'].pct_change().shift(-1))
+        returns = portfolio.Portfolio.portfolio_returns('unittest', weights, ds.data['Adj Close'])
 
-        returns = portfolio.Portfolio.portfolio_returns(weights, ds.data['Adj Close'])
+        expected = pd.DataFrame([
+            [0.1, 1.1],
+            [0.2, 1.32],
+            [0.000027, 1.320036],
+            [0.0, 1.320036]
+        ], columns=['unittest_returns', 'unittest_cumrets'])
 
-        print(returns)
-        print((returns+1).cumprod())
+        pd.testing.assert_frame_equal(expected.round(5), returns.round(5))
