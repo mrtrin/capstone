@@ -24,7 +24,7 @@ def main(num_epochs=128, batch_size=32, learning_rate=0.001):
     print('y', y.shape)
     print('y_price', y_price.shape)
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
     
     print('========= Train / Test Dataset =========')
     print('X_train', X_train.shape)
@@ -35,11 +35,10 @@ def main(num_epochs=128, batch_size=32, learning_rate=0.001):
 
     model = train(X_train, y_train, num_epochs, batch_size, learning_rate)
 
-    optimal_test_portfolio = Portfolio.portfolio_returns('optimal', y, y_price)
-    predicted_test_portfolio = Portfolio.portfolio_returns('predicted', model.predict(X_test), y_price)
+    optimal_portfolio = Portfolio.portfolio_returns('optimal', y_test, y_price[-1*len(y_test):])
+    model_portfolio = Portfolio.portfolio_returns('model', model.predict(X_test), y_price[-1*len(X_test):])
 
-    overall = optimal_test_portfolio.join(predicted_test_portfolio)
-
+    overall = optimal_portfolio.join(model_portfolio)
     print(overall)
 
 

@@ -13,7 +13,7 @@ def load_train_test(tickers, start, end, lookback_period=10, rebalance_period=5)
     targets = dataset.targets(features, rebalance_period)
     X, y, y_price = dataset.create_training_set(features, targets, lookback_period)
     
-    return dataset.data, features, targets, X.astype(np.float32), y.astype(np.float32), y_price.astype(np.float32)
+    return dataset.data, features, targets, X.astype(np.float32), y.astype(np.float32), y_price
 
 class Dataset:
     def __init__(self, tickers, start_date, end_date):
@@ -86,10 +86,13 @@ class Dataset:
         print(targets.shape)
         print(closes.shape)
         
-        X, y, y_price = [], [], []
+        X, y, y_price, y_date = [], [], [], []
         for i in range(len(features)-lookback):
             if features.index[i].dayofweek == dayofweek: # Friday
                 X.append(features[i:i+lookback])
                 y.append(targets[i+lookback:i+lookback+1])
                 y_price.append(closes[i+lookback:i+lookback+1])
-        return np.array(X), np.array(y).reshape(len(y), targets.shape[1]), np.array(y_price).reshape(len(y_price), targets.shape[1])
+                y_date.append(closes.index[i+lookback])
+        
+        y_price = pd.DataFrame(index=np.array(y_date), data=np.array(y_price).reshape(len(y_price), targets.shape[1]), columns=closes.columns)
+        return np.array(X), np.array(y).reshape(len(y), targets.shape[1]), y_price
