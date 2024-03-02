@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from src.datasets import load_train_test
 from src.portfolio import Portfolio
 
+import numpy as np
 import pandas as pd
 
 import warnings
@@ -35,10 +36,18 @@ def main(num_epochs=128, batch_size=32, learning_rate=0.001):
 
     model = train(X_train, y_train, num_epochs, batch_size, learning_rate)
 
-    optimal_portfolio = Portfolio.portfolio_returns('optimal', y_test, y_price[-1*len(y_test):])
-    model_portfolio = Portfolio.portfolio_returns('model', model.predict(X_test), y_price[-1*len(X_test):])
+    y_test_price = y_price[-1*len(y_test):]
 
-    overall = optimal_portfolio.join(model_portfolio)
+    optimal_portfolio = Portfolio.portfolio_returns('optimal', y_test, y_test_price)
+    model_portfolio = Portfolio.portfolio_returns('model', model.predict(X_test), y_test_price)
+
+    one_over_n = np.ones(y_test_price.shape)
+    one_over_n[:,-1] = 0
+    one_over_n = one_over_n / len(tickers)
+
+    oneovern_portfolio = Portfolio.portfolio_returns('oneovern', one_over_n, y_test_price)
+
+    overall = optimal_portfolio.join(model_portfolio).join(oneovern_portfolio)
     print(overall)
 
 
