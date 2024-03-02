@@ -12,9 +12,9 @@ pd.options.mode.chained_assignment = None
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def main(num_epochs=128, batch_size=32, learning_rate=0.001):
-    tickers = ['AAPL', 'MSFT', 'GOOG', 'META', 'TSLA', 'SPY']
-    start = '2010-01-01'
-    end = '2024-01-01'
+    tickers = ['V', 'GOOGL', 'T', 'JNJ', 'DIS']
+    start = '2013-01-01'
+    end = '2023-12-31'
     yfdata, features, targets, X, y, y_price = load_train_test(tickers, start, end)
     
     print('========= Original Dataset =========')
