@@ -8,15 +8,13 @@ This project aims to utilize Machine Learing for portfolio allocation.
 2. Create virtual environment: python3 -m venv env
 3. Activate virtual environment: env\bin\activate (Linux/Mac) or env\Scripts\activate
 4. Install python dependencies: pip install -r requirements.txt
-5. Install project: pip install -e .
 
 ### To Run Expertiment
 
 Run research.ipynb in Jupyter mode on VS Code
 
-Note that research.ipynb relies on code in src/ folder that needs to be installed in step 5 in Setup Instruction above
-
 Alternatively, you can run as command line "python src/research.py" which should generate similar results as the research.ipynb
+However, you need to install project code: pip install -e .
 
 
 ### Unittest
